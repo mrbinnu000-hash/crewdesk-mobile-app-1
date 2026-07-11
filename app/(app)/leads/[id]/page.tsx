@@ -8,12 +8,13 @@ import {
   Sparkles,
   Timer,
   AudioLines,
-  Check,
+  ListChecks,
 } from 'lucide-react'
-import { leads } from '@/lib/data'
+import { leads, scoreQuality } from '@/lib/data'
 import { LeadStatusBadge } from '@/components/status-badge'
 import { AudioPlayer } from '@/components/audio-player'
 import { Transcript } from '@/components/transcript'
+import { FollowUpChecklist } from '@/components/follow-up-checklist'
 import { cn } from '@/lib/utils'
 
 export default async function LeadDetailPage({
@@ -24,6 +25,8 @@ export default async function LeadDetailPage({
   const { id } = await params
   const lead = leads.find((l) => l.id === id)
   if (!lead) notFound()
+
+  const quality = scoreQuality(lead.score)
 
   return (
     <div className="flex flex-col gap-5 px-5 pt-6">
@@ -47,9 +50,16 @@ export default async function LeadDetailPage({
               {lead.address}
             </p>
           </div>
-          <div className="flex shrink-0 flex-col items-center rounded-2xl bg-secondary px-3.5 py-2.5">
-            <span className="text-lg font-semibold tabular-nums text-primary">{lead.score}</span>
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Score</span>
+          <div className="flex shrink-0 flex-col items-center gap-1 rounded-2xl bg-secondary/60 px-3.5 py-2.5">
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                quality.className,
+              )}
+            >
+              {quality.label}
+            </span>
+            <span className="text-lg font-semibold tabular-nums">{lead.score}</span>
           </div>
         </div>
 
@@ -108,14 +118,7 @@ export default async function LeadDetailPage({
           </span>
           <h2 className="text-base font-semibold">AI Summary</h2>
         </div>
-        <ul className="flex flex-col gap-2.5">
-          {lead.summary.map((line, i) => (
-            <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-foreground/90">
-              <span className="mt-2 size-1 shrink-0 rounded-full bg-primary/50" aria-hidden="true" />
-              {line}
-            </li>
-          ))}
-        </ul>
+        <p className="text-sm leading-relaxed text-foreground/90 text-pretty">{lead.summary.join(' ')}</p>
       </section>
 
       {/* Recording */}
@@ -138,42 +141,19 @@ export default async function LeadDetailPage({
         <Transcript messages={lead.transcript} />
       </section>
 
-      {/* Timeline */}
+      {/* Follow-up Checklist */}
       <section
-        aria-label="Lead timeline"
+        aria-label="Follow-up checklist"
         className="animate-fade-up rounded-3xl border border-border bg-card p-5 shadow-sm"
         style={{ animationDelay: '260ms' }}
       >
-        <h2 className="mb-4 text-base font-semibold">Lead Timeline</h2>
-        <ol className="flex flex-col">
-          {lead.timeline.map((event, i) => (
-            <li key={i} className="relative flex gap-3.5 pb-5 last:pb-0">
-              {i < lead.timeline.length - 1 && (
-                <span
-                  className={cn(
-                    'absolute left-[9px] top-6 h-[calc(100%-1rem)] w-px',
-                    event.done ? 'bg-primary/30' : 'bg-border',
-                  )}
-                  aria-hidden="true"
-                />
-              )}
-              <span
-                className={cn(
-                  'mt-0.5 flex size-[19px] shrink-0 items-center justify-center rounded-full border-2',
-                  event.done
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-card',
-                )}
-              >
-                {event.done && <Check className="size-2.5" strokeWidth={3.5} />}
-              </span>
-              <div>
-                <p className={cn('text-sm font-medium', !event.done && 'text-muted-foreground')}>{event.label}</p>
-                {event.time && <p className="mt-0.5 text-xs text-muted-foreground">{event.time}</p>}
-              </div>
-            </li>
-          ))}
-        </ol>
+        <div className="mb-3 flex items-center gap-2">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+            <ListChecks className="size-3.5" />
+          </span>
+          <h2 className="text-base font-semibold">Follow-up Checklist</h2>
+        </div>
+        <FollowUpChecklist status={lead.status} />
       </section>
     </div>
   )

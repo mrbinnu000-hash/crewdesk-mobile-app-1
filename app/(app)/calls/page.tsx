@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { calls, type CallStatus } from '@/lib/data'
 import { CallStatusBadge } from '@/components/status-badge'
+import { EmptyState } from '@/components/empty-state'
 import { cn } from '@/lib/utils'
 
 type Filter = 'today' | 'week' | 'month' | 'answered' | 'missed' | 'voicemail'
@@ -122,17 +123,11 @@ export default function CallsPage() {
 
       {/* Timeline */}
       {groups.length === 0 ? (
-        <div className="animate-fade-up flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-card/50 px-6 py-14 text-center">
-          <span className="flex size-12 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
-            <PhoneOff className="size-5" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold">No calls found</p>
-            <p className="mt-1 text-sm text-muted-foreground text-pretty">
-              Try a different search or filter.
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={PhoneOff}
+          title="No calls to show"
+          message="Nothing matches this search or filter. When the phone rings, every call will show up here automatically."
+        />
       ) : (
         <div className="flex flex-col gap-5 pb-2">
           {groups.map(({ group, items }) => (

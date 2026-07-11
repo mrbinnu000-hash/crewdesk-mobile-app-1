@@ -80,7 +80,7 @@ export default function LoginPage() {
         className="animate-fade-up text-center text-xs leading-relaxed text-muted-foreground"
         style={{ animationDelay: '140ms' }}
       >
-        Enterprise-grade call handling for local businesses.
+        AI Receptionist for Local Businesses
       </p>
     </main>
   )

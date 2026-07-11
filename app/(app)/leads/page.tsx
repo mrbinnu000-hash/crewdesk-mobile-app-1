@@ -3,8 +3,9 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Search, ChevronRight, Phone, SearchX } from 'lucide-react'
-import { leads, type LeadStatus } from '@/lib/data'
+import { leads, scoreQuality, type LeadStatus } from '@/lib/data'
 import { LeadStatusBadge } from '@/components/status-badge'
+import { EmptyState } from '@/components/empty-state'
 import { cn } from '@/lib/utils'
 
 type Filter = 'all' | 'today' | 'urgent' | 'qualified' | 'contacted' | 'won' | 'lost'
@@ -105,17 +106,11 @@ export default function LeadsPage() {
 
       {/* Lead list */}
       {filtered.length === 0 ? (
-        <div className="animate-fade-up flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-card/50 px-6 py-14 text-center">
-          <span className="flex size-12 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
-            <SearchX className="size-5" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold">No leads found</p>
-            <p className="mt-1 text-sm text-muted-foreground text-pretty">
-              Try a different search or filter.
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={SearchX}
+          title="No leads match that"
+          message="Nothing turned up for this search or filter. Try broadening it — your receptionist is still catching every call."
+        />
       ) : (
         <div className="flex flex-col gap-2.5 pb-2">
           {filtered.map((lead, i) => (
@@ -145,9 +140,14 @@ export default function LeadsPage() {
                 </div>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-2">
-                <span className={cn('text-sm font-semibold tabular-nums', scoreColor(lead.score))}>
-                  {lead.score}
-                </span>
+                <div className="flex flex-col items-end gap-0.5">
+                  <span className={cn('text-sm font-semibold tabular-nums', scoreColor(lead.score))}>
+                    {lead.score}
+                  </span>
+                  <span className="text-[10px] font-medium text-muted-foreground">
+                    {scoreQuality(lead.score).label}
+                  </span>
+                </div>
                 <ChevronRight className="size-4 text-muted-foreground" />
               </div>
             </Link>

@@ -5,7 +5,7 @@ import { activityChart } from '@/lib/data'
 
 export function ActivityChart() {
   return (
-    <div className="h-44 w-full" role="img" aria-label="Line chart of calls received per hour today">
+    <div className="h-32 w-full" role="img" aria-label="Line chart of calls received per hour today">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={activityChart} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
           <defs>

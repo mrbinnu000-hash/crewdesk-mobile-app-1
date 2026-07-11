@@ -338,12 +338,62 @@ export const activityChart = [
   { hour: '2 PM', calls: 1 },
 ]
 
-export const aiDailySummary = [
-  'Your receptionist answered 14 calls today.',
-  '9 became qualified leads.',
-  '3 customers requested urgent callbacks.',
-  'Most common issue: roof leaks after last night’s storm.',
+export const aiDailySummary = {
+  text: 'Your receptionist answered 14 calls today and turned 9 of them into qualified leads. Most callers were dealing with roof leaks after last night\u2019s storm, and 3 of them asked for an urgent callback.',
+  recommendedAction: 'Call David Chen first — a tree fell on his roof and he needs emergency tarping today.',
+  recommendedLeadId: 'l3',
+  generatedMinutesAgo: 12,
+}
+
+export interface AppNotification {
+  id: string
+  type: 'qualified' | 'missed' | 'urgent' | 'summary'
+  title: string
+  message: string
+  time: string
+  unread: boolean
+}
+
+export const notifications: AppNotification[] = [
+  {
+    id: 'n1',
+    type: 'urgent',
+    title: 'Urgent Callback',
+    message: 'David Chen needs emergency tarping — a tree fell on his roof.',
+    time: '5m ago',
+    unread: true,
+  },
+  {
+    id: 'n2',
+    type: 'qualified',
+    title: 'New Qualified Lead',
+    message: 'Sarah Mitchell wants a full roof replacement estimate.',
+    time: '32m ago',
+    unread: true,
+  },
+  {
+    id: 'n3',
+    type: 'missed',
+    title: 'Missed Call',
+    message: '(737) 555-0201 called at 12:33 PM. No voicemail left.',
+    time: '1h ago',
+    unread: false,
+  },
+  {
+    id: 'n4',
+    type: 'summary',
+    title: 'AI Summary Ready',
+    message: 'Your daily call summary for today is ready to review.',
+    time: '2h ago',
+    unread: false,
+  },
 ]
+
+export function scoreQuality(score: number): { label: string; className: string } {
+  if (score >= 85) return { label: 'High Quality', className: 'bg-success/10 text-success' }
+  if (score >= 65) return { label: 'Good Quality', className: 'bg-primary/10 text-primary' }
+  return { label: 'Low Quality', className: 'bg-muted text-muted-foreground' }
+}
 
 export const statusConfig: Record<
   LeadStatus,

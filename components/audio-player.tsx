@@ -57,9 +57,9 @@ export function AudioPlayer({ duration }: { duration: string }) {
         <button
           onClick={() => setPlaying((p) => !p)}
           aria-label={playing ? 'Pause recording' : 'Play recording'}
-          className="press-scale flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm"
+          className="press-scale flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/20"
         >
-          {playing ? <Pause className="size-4.5" /> : <Play className="size-4.5 translate-x-[1px]" />}
+          {playing ? <Pause className="size-5.5" /> : <Play className="size-5.5 translate-x-[1px]" />}
         </button>
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <input
