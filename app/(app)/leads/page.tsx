@@ -1,0 +1,159 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { Search, ChevronRight, Phone, SearchX } from 'lucide-react'
+import { leads, type LeadStatus } from '@/lib/data'
+import { LeadStatusBadge } from '@/components/status-badge'
+import { cn } from '@/lib/utils'
+
+type Filter = 'all' | 'today' | 'urgent' | 'qualified' | 'contacted' | 'won' | 'lost'
+
+const filters: { key: Filter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'today', label: 'Today' },
+  { key: 'urgent', label: 'Urgent' },
+  { key: 'qualified', label: 'Qualified' },
+  { key: 'contacted', label: 'Contacted' },
+  { key: 'won', label: 'Won' },
+  { key: 'lost', label: 'Lost' },
+]
+
+function scoreColor(score: number) {
+  if (score >= 85) return 'text-success'
+  if (score >= 65) return 'text-primary'
+  return 'text-muted-foreground'
+}
+
+export default function LeadsPage() {
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<Filter>('all')
+
+  const filtered = useMemo(() => {
+    return leads.filter((lead) => {
+      const q = query.trim().toLowerCase()
+      if (
+        q &&
+        !lead.name.toLowerCase().includes(q) &&
+        !lead.reason.toLowerCase().includes(q) &&
+        !lead.phone.includes(q)
+      ) {
+        return false
+      }
+      switch (filter) {
+        case 'today':
+          return lead.dateGroup === 'Today'
+        case 'urgent':
+          return lead.urgency === 'high'
+        case 'qualified':
+        case 'contacted':
+        case 'won':
+        case 'lost':
+          return lead.status === (filter as LeadStatus)
+        default:
+          return true
+      }
+    })
+  }, [query, filter])
+
+  return (
+    <div className="flex flex-col gap-4 px-5 pt-8">
+      <header className="animate-fade-up">
+        <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          {leads.length} leads captured by your receptionist
+        </p>
+      </header>
+
+      {/* Search */}
+      <div className="animate-fade-up relative" style={{ animationDelay: '60ms' }}>
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search leads..."
+          aria-label="Search leads"
+          className="h-11 w-full rounded-2xl border border-border bg-card pl-10 pr-4 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
+        />
+      </div>
+
+      {/* Filters */}
+      <div
+        className="animate-fade-up no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5"
+        style={{ animationDelay: '90ms' }}
+        role="tablist"
+        aria-label="Filter leads"
+      >
+        {filters.map((f) => (
+          <button
+            key={f.key}
+            role="tab"
+            aria-selected={filter === f.key}
+            onClick={() => setFilter(f.key)}
+            className={cn(
+              'press-scale shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+              filter === f.key
+                ? 'bg-primary text-primary-foreground'
+                : 'border border-border bg-card text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Lead list */}
+      {filtered.length === 0 ? (
+        <div className="animate-fade-up flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-card/50 px-6 py-14 text-center">
+          <span className="flex size-12 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
+            <SearchX className="size-5" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold">No leads found</p>
+            <p className="mt-1 text-sm text-muted-foreground text-pretty">
+              Try a different search or filter.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5 pb-2">
+          {filtered.map((lead, i) => (
+            <Link
+              key={lead.id}
+              href={`/leads/${lead.id}`}
+              className="press-scale animate-fade-up flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+              style={{ animationDelay: `${Math.min(i * 40, 240)}ms` }}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-semibold">{lead.name}</p>
+                  {lead.urgency === 'high' && (
+                    <span className="size-1.5 shrink-0 rounded-full bg-destructive" aria-label="Urgent" />
+                  )}
+                </div>
+                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Phone className="size-3" />
+                  {lead.phone}
+                </p>
+                <p className="mt-1 truncate text-sm text-muted-foreground">{lead.reason}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <LeadStatusBadge status={lead.status} />
+                  <span className="text-xs text-muted-foreground">
+                    {lead.dateGroup === 'Today' ? lead.time : lead.dateGroup}
+                  </span>
+                </div>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <span className={cn('text-sm font-semibold tabular-nums', scoreColor(lead.score))}>
+                  {lead.score}
+                </span>
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
