@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Search, ChevronRight, Phone, SearchX } from 'lucide-react'
+import { Search, ChevronRight, Phone, SearchX, Timer } from 'lucide-react'
 import { leads, scoreQuality, type LeadStatus } from '@/lib/data'
-import { LeadStatusBadge } from '@/components/status-badge'
+import { LeadStatusBadge, CallStatusBadge } from '@/components/status-badge'
 import { EmptyState } from '@/components/empty-state'
 import { cn } from '@/lib/utils'
 
@@ -62,7 +62,7 @@ export default function LeadsPage() {
       <header className="animate-fade-up">
         <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          {leads.length} leads captured by your receptionist
+          {leads.length} calls turned into leads by your receptionist
         </p>
       </header>
 
@@ -132,10 +132,18 @@ export default function LeadsPage() {
                   {lead.phone}
                 </p>
                 <p className="mt-1 truncate text-sm text-muted-foreground">{lead.reason}</p>
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-2 flex flex-wrap items-center gap-2">
                   <LeadStatusBadge status={lead.status} />
-                  <span className="text-xs text-muted-foreground">
-                    {lead.dateGroup === 'Today' ? lead.time : lead.dateGroup}
+                  <CallStatusBadge status={lead.callStatus} />
+                </div>
+                <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Timer className="size-3" />
+                    <span className="tabular-nums">{lead.duration}</span>
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span>
+                    {lead.dateGroup === 'Today' ? `Today, ${lead.time}` : `${lead.dateGroup}, ${lead.time}`}
                   </span>
                 </div>
               </div>

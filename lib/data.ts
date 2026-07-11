@@ -25,23 +25,10 @@ export interface Lead {
   status: LeadStatus
   urgency: Urgency
   duration: string
+  callStatus: CallStatus
   summary: string[]
   transcript: TranscriptMessage[]
   timeline: TimelineEvent[]
-}
-
-export interface CallRecord {
-  id: string
-  leadId?: string
-  name: string
-  phone: string
-  time: string
-  dateGroup: 'Today' | 'Yesterday' | 'This Week'
-  duration: string
-  status: CallStatus
-  hasRecording: boolean
-  hasTranscript: boolean
-  reason: string
 }
 
 export const business = {
@@ -63,6 +50,7 @@ export const leads: Lead[] = [
     status: 'qualified',
     urgency: 'high',
     duration: '4m 12s',
+    callStatus: 'answered',
     summary: [
       'Customer reported a roof leak after heavy rain last night.',
       'Water is coming through the ceiling in the upstairs bedroom.',
@@ -102,6 +90,7 @@ export const leads: Lead[] = [
     status: 'qualified',
     urgency: 'medium',
     duration: '6m 03s',
+    callStatus: 'answered',
     summary: [
       'Homeowner requesting a full roof replacement estimate.',
       'Roof is 22 years old, asphalt shingle, approximately 2,800 sq ft.',
@@ -140,6 +129,7 @@ export const leads: Lead[] = [
     status: 'callback',
     urgency: 'high',
     duration: '3m 40s',
+    callStatus: 'answered',
     summary: [
       'A tree limb fell on the roof during last night’s storm.',
       'Visible hole in the roof deck over the garage.',
@@ -175,6 +165,7 @@ export const leads: Lead[] = [
     status: 'contacted',
     urgency: 'low',
     duration: '2m 51s',
+    callStatus: 'answered',
     summary: [
       'Gutters overflowing at the front of the house.',
       'Likely clogged; one section pulling away from fascia.',
@@ -211,6 +202,7 @@ export const leads: Lead[] = [
     status: 'qualified',
     urgency: 'medium',
     duration: '5m 17s',
+    callStatus: 'answered',
     summary: [
       'Neighbor had confirmed hail damage; customer wants an inspection.',
       'Roof is 12 years old, architectural shingle.',
@@ -248,6 +240,7 @@ export const leads: Lead[] = [
     status: 'won',
     urgency: 'low',
     duration: '3m 29s',
+    callStatus: 'answered',
     summary: [
       'Skylight in the kitchen leaking during heavy rain.',
       'Flashing likely failed — common on this model.',
@@ -282,6 +275,7 @@ export const leads: Lead[] = [
     status: 'lost',
     urgency: 'low',
     duration: '2m 08s',
+    callStatus: 'answered',
     summary: [
       'Requested quote for missing shingles after wind.',
       'Price-sensitive; chose a lower competitor bid.',
@@ -304,19 +298,35 @@ export const leads: Lead[] = [
       { label: 'Lost', time: 'Thursday, 11:00 AM', done: true },
     ],
   },
-]
-
-export const calls: CallRecord[] = [
-  { id: 'c1', leadId: 'l4', name: 'Emily Rodriguez', phone: '(512) 555-0132', time: '1:48 PM', dateGroup: 'Today', duration: '2m 51s', status: 'answered', hasRecording: true, hasTranscript: true, reason: 'Gutter repair and cleaning' },
-  { id: 'c2', name: 'Unknown Caller', phone: '(737) 555-0201', time: '12:33 PM', dateGroup: 'Today', duration: '—', status: 'missed', hasRecording: false, hasTranscript: false, reason: 'No voicemail left' },
-  { id: 'c3', leadId: 'l2', name: 'Sarah Mitchell', phone: '(512) 555-0173', time: '11:15 AM', dateGroup: 'Today', duration: '6m 03s', status: 'answered', hasRecording: true, hasTranscript: true, reason: 'Full roof replacement estimate' },
-  { id: 'c4', leadId: 'l1', name: 'John Smith', phone: '(512) 555-0198', time: '9:42 AM', dateGroup: 'Today', duration: '4m 12s', status: 'answered', hasRecording: true, hasTranscript: true, reason: 'Roof leak after heavy rain' },
-  { id: 'c5', name: 'Tom Baker', phone: '(512) 555-0177', time: '8:50 AM', dateGroup: 'Today', duration: '0m 48s', status: 'voicemail', hasRecording: true, hasTranscript: true, reason: 'Left voicemail about attic ventilation' },
-  { id: 'c6', leadId: 'l3', name: 'David Chen', phone: '(512) 555-0155', time: '8:05 AM', dateGroup: 'Today', duration: '3m 40s', status: 'answered', hasRecording: true, hasTranscript: true, reason: 'Urgent: tree fell on roof' },
-  { id: 'c7', leadId: 'l5', name: 'Robert Kowalski', phone: '(512) 555-0119', time: '4:22 PM', dateGroup: 'Yesterday', duration: '5m 17s', status: 'answered', hasRecording: true, hasTranscript: true, reason: 'Hail damage inspection' },
-  { id: 'c8', name: 'Unknown Caller', phone: '(830) 555-0143', time: '12:10 PM', dateGroup: 'Yesterday', duration: '—', status: 'missed', hasRecording: false, hasTranscript: false, reason: 'No voicemail left' },
-  { id: 'c9', leadId: 'l6', name: 'Linda Tran', phone: '(512) 555-0186', time: '10:30 AM', dateGroup: 'Yesterday', duration: '3m 29s', status: 'answered', hasRecording: true, hasTranscript: true, reason: 'Skylight leak repair' },
-  { id: 'c10', leadId: 'l7', name: 'Marcus Webb', phone: '(512) 555-0164', time: '2:15 PM', dateGroup: 'This Week', duration: '2m 08s', status: 'answered', hasRecording: true, hasTranscript: true, reason: 'Shingle repair quote' },
+  {
+    id: 'l8',
+    name: 'Tom Baker',
+    phone: '(512) 555-0177',
+    address: '1802 Windridge Dr, Austin, TX 78748',
+    reason: 'Voicemail about attic ventilation',
+    time: '8:50 AM',
+    dateGroup: 'Today',
+    score: 58,
+    status: 'callback',
+    urgency: 'low',
+    duration: '0m 48s',
+    callStatus: 'voicemail',
+    summary: [
+      'Caller left a voicemail asking about attic ventilation options.',
+      'Mentioned the upstairs gets very hot in summer.',
+      'No urgency stated — requested a callback when convenient.',
+    ],
+    transcript: [
+      { speaker: 'customer', text: "Hi, this is Tom Baker. I'm calling about attic ventilation — my upstairs gets really hot in the summer and I've heard ridge vents can help. Could someone give me a call back when you get a chance? My number is 512-555-0177. Thanks." },
+    ],
+    timeline: [
+      { label: 'Lead created', time: 'Today, 8:50 AM', done: true },
+      { label: 'Viewed', time: '', done: false },
+      { label: 'Contacted', time: '', done: false },
+      { label: 'Quote sent', time: '', done: false },
+      { label: 'Won / Lost', time: '', done: false },
+    ],
+  },
 ]
 
 export const dashboardStats = {

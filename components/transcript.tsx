@@ -41,7 +41,9 @@ export function Transcript({ messages }: { messages: TranscriptMessage[] }) {
         <div>
           <h2 className="text-base font-semibold">Conversation</h2>
         </div>
-        <span className="ml-auto text-xs text-muted-foreground">{messages.length} messages</span>
+        <span className="ml-auto text-xs text-muted-foreground">
+          {messages.length} {messages.length === 1 ? 'message' : 'messages'}
+        </span>
       </div>
       <div className="flex flex-col gap-3">
         {visible.map((msg, i) => (

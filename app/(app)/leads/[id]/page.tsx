@@ -7,11 +7,12 @@ import {
   MapPin,
   Sparkles,
   Timer,
+  Clock,
   AudioLines,
   ListChecks,
 } from 'lucide-react'
 import { leads, scoreQuality } from '@/lib/data'
-import { LeadStatusBadge } from '@/components/status-badge'
+import { LeadStatusBadge, CallStatusBadge } from '@/components/status-badge'
 import { AudioPlayer } from '@/components/audio-player'
 import { Transcript } from '@/components/transcript'
 import { FollowUpChecklist } from '@/components/follow-up-checklist'
@@ -68,17 +69,25 @@ export default async function LeadDetailPage({
           <p className="mt-1 text-sm font-medium leading-relaxed text-pretty">{lead.reason}</p>
         </div>
 
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <LeadStatusBadge status={lead.status} />
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Timer className="size-3" />
-            {lead.duration}
-          </span>
+          <CallStatusBadge status={lead.callStatus} />
           {lead.urgency === 'high' && (
             <span className="rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
               Urgent
             </span>
           )}
+        </div>
+        <div className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Timer className="size-3" />
+            <span className="tabular-nums">{lead.duration}</span>
+          </span>
+          <span aria-hidden="true">·</span>
+          <span className="flex items-center gap-1">
+            <Clock className="size-3" />
+            {lead.dateGroup === 'Today' ? `Today, ${lead.time}` : `${lead.dateGroup}, ${lead.time}`}
+          </span>
         </div>
 
         {/* Actions */}
