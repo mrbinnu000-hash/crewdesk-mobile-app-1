@@ -357,44 +357,86 @@ export const aiDailySummary = {
 
 export interface AppNotification {
   id: string
-  type: 'qualified' | 'missed' | 'urgent' | 'summary'
+  type: 'qualified' | 'urgent' | 'summary' | 'handled' | 'daily'
   title: string
   message: string
+  customerName: string
   time: string
+  relativetime: string
+  dateGroup: 'Today' | 'Yesterday' | 'Earlier'
   unread: boolean
+  leadId?: string
 }
 
 export const notifications: AppNotification[] = [
   {
     id: 'n1',
     type: 'urgent',
-    title: 'Urgent Callback',
-    message: 'David Chen needs emergency tarping — a tree fell on his roof.',
-    time: '5m ago',
+    title: 'Urgent Callback Requested',
+    message: 'Emergency tarping needed — tree fell on roof.',
+    customerName: 'David Chen',
+    time: '8:05 AM',
+    relativetime: '5m ago',
+    dateGroup: 'Today',
     unread: true,
+    leadId: 'l3',
   },
   {
     id: 'n2',
     type: 'qualified',
     title: 'New Qualified Lead',
-    message: 'Sarah Mitchell wants a full roof replacement estimate.',
-    time: '32m ago',
+    message: 'Full roof replacement estimate requested.',
+    customerName: 'Sarah Mitchell',
+    time: '11:15 AM',
+    relativetime: '32m ago',
+    dateGroup: 'Today',
     unread: true,
+    leadId: 'l2',
   },
   {
     id: 'n3',
-    type: 'missed',
-    title: 'Missed Call',
-    message: '(737) 555-0201 called at 12:33 PM. No voicemail left.',
-    time: '1h ago',
+    type: 'handled',
+    title: 'Missed Call Successfully Handled',
+    message: 'Voicemail about attic ventilation left.',
+    customerName: 'Tom Baker',
+    time: '8:50 AM',
+    relativetime: '1h ago',
+    dateGroup: 'Today',
     unread: false,
+    leadId: 'l8',
   },
   {
     id: 'n4',
     type: 'summary',
     title: 'AI Summary Ready',
-    message: 'Your daily call summary for today is ready to review.',
-    time: '2h ago',
+    message: 'Your daily call summary is ready to review.',
+    customerName: 'System',
+    time: '2:00 PM',
+    relativetime: '2h ago',
+    dateGroup: 'Today',
+    unread: false,
+  },
+  {
+    id: 'n5',
+    type: 'qualified',
+    title: 'New Qualified Lead',
+    message: 'Hail damage inspection requested.',
+    customerName: 'Robert Kowalski',
+    time: '4:22 PM',
+    relativetime: '1d ago',
+    dateGroup: 'Yesterday',
+    unread: false,
+    leadId: 'l5',
+  },
+  {
+    id: 'n6',
+    type: 'daily',
+    title: 'Daily Summary',
+    message: '12 calls handled, 7 qualified leads generated.',
+    customerName: 'System',
+    time: '8:00 PM',
+    relativetime: '2d ago',
+    dateGroup: 'Earlier',
     unread: false,
   },
 ]
