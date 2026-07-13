@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutGrid, Users, Bell, Settings } from 'lucide-react'
+import { LayoutGrid, Users, Bell, BarChart3, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
   { href: '/leads', label: 'Leads', icon: Users },
   { href: '/notifications', label: 'Notifications', icon: Bell },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
