@@ -1,146 +1,166 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
+
+// Retell webhook signature verification
+function verifyRetellSignature(body: string, signature: string): boolean {
+  const secret = process.env.RETELL_WEBHOOK_SECRET || ''
+
+  if (!secret) {
+    console.warn('[CrewDesk] RETELL_WEBHOOK_SECRET not configured - skipping signature verification')
+    return true
+  }
+
+  const hash = crypto
+    .createHmac('sha256', secret)
+    .update(body)
+    .digest('base64')
+
+  return hash === signature
+}
+
+// Idempotency key storage (in production, use Redis or database)
+const processedWebhooks = new Set<string>()
 
 export async function POST(req: NextRequest) {
   try {
-    const payload = await req.json()
+    const signature = req.headers.get('x-retell-signature') || ''
+    const idempotencyKey = req.headers.get('x-retell-idempotency-key') || ''
 
-    // Verify Retell webhook signature (optional but recommended)
-    // You can add signature verification here using Retell's webhook secret
+    // Read and verify signature
+    const body = await req.text()
 
+    if (!verifyRetellSignature(body, signature)) {
+      console.error('[CrewDesk] Invalid webhook signature')
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+
+    // Check for duplicate webhook (idempotency)
+    if (idempotencyKey && processedWebhooks.has(idempotencyKey)) {
+      console.log('[CrewDesk] Duplicate webhook detected, returning cached response')
+      return NextResponse.json({ success: true, cached: true })
+    }
+
+    const payload = JSON.parse(body)
     const supabase = await createClient()
 
-    // Handle different webhook event types
-    switch (payload.event) {
-      case 'call_started':
-        return await handleCallStarted(payload, supabase)
-      case 'call_ended':
-        return await handleCallEnded(payload, supabase)
-      case 'call_analyzed':
-        return await handleCallAnalyzed(payload, supabase)
-      default:
-        return NextResponse.json({ message: 'Event type not handled' })
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 })
     }
-  } catch (error) {
-    console.error('[v0] Retell webhook error:', error)
-    return NextResponse.json(
-      { error: 'Webhook processing failed' },
-      { status: 500 }
-    )
-  }
-}
 
-async function handleCallStarted(payload: any, supabase: any) {
-  const { call_id, agent_id, caller_phone_number, caller_name } = payload
-
-  // Create call record
-  const { data: call, error } = await supabase.from('calls').insert([
-    {
-      retell_call_id: call_id,
-      agent_id,
-      caller_phone_number,
-      caller_name: caller_name || 'Unknown',
-      status: 'ongoing',
-    },
-  ])
-
-  if (error) {
-    console.error('[v0] Failed to create call record:', error)
-    return NextResponse.json({ error: 'Failed to create call' }, { status: 500 })
-  }
-
-  return NextResponse.json({ success: true, message: 'Call started recorded' })
-}
-
-async function handleCallEnded(payload: any, supabase: any) {
-  const { call_id, duration_seconds, recording_url, transcript } = payload
-
-  // Update call record
-  const { error } = await supabase
-    .from('calls')
-    .update({
-      status: 'completed',
+    const {
+      call_id,
+      phone_number,
       duration_seconds,
-      recording_url,
       transcript,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('retell_call_id', call_id)
-
-  if (error) {
-    console.error('[v0] Failed to update call record:', error)
-    return NextResponse.json(
-      { error: 'Failed to update call' },
-      { status: 500 }
-    )
-  }
-
-  return NextResponse.json({ success: true, message: 'Call ended recorded' })
-}
-
-async function handleCallAnalyzed(payload: any, supabase: any) {
-  const {
-    call_id,
-    analysis,
-    qualified_lead,
-    lead_data,
-    agent_id,
-  } = payload
-
-  // Update call with analysis
-  const { error: callError } = await supabase
-    .from('calls')
-    .update({
-      call_analysis: analysis,
+      recording_url,
+      call_analysis,
       qualified_lead,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('retell_call_id', call_id)
+      customer_name,
+      customer_phone,
+      customer_email,
+      customer_address,
+      call_reason,
+      urgency,
+      business_id,
+    } = payload
 
-  if (callError) {
-    console.error('[v0] Failed to update call analysis:', callError)
-  }
+    // Get business ID from call metadata or use provided one
+    let finalBusinessId = business_id
 
-  // If qualified lead, create lead record
-  if (qualified_lead && lead_data) {
-    const { data: callRecord } = await supabase
+    if (!finalBusinessId && call_id) {
+      // Try to find business from call_id if provided
+      const { data: existingCall } = await supabase
+        .from('calls')
+        .select('business_id')
+        .eq('call_id', call_id)
+        .single()
+
+      if (existingCall) {
+        finalBusinessId = existingCall.business_id
+      }
+    }
+
+    if (!finalBusinessId) {
+      console.error('[CrewDesk] No business_id provided in webhook')
+      return NextResponse.json({ error: 'Missing business_id' }, { status: 400 })
+    }
+
+    // Create call record
+    const { data: callData, error: callError } = await supabase
       .from('calls')
-      .select('id')
-      .eq('retell_call_id', call_id)
+      .insert([
+        {
+          business_id: finalBusinessId,
+          call_id,
+          phone_number,
+          duration_seconds: duration_seconds || 0,
+          transcript: transcript || null,
+          recording_url: recording_url || null,
+          call_analysis: call_analysis || {},
+          status: 'completed',
+        },
+      ])
+      .select()
       .single()
 
-    if (callRecord) {
+    if (callError) {
+      throw callError
+    }
+
+    // Create lead if qualified
+    if (qualified_lead && callData) {
       const { error: leadError } = await supabase.from('leads').insert([
         {
-          agent_id,
-          call_id: callRecord.id,
-          customer_name: lead_data.name || 'Unknown',
-          customer_email: lead_data.email,
-          customer_phone: lead_data.phone,
-          service_type: lead_data.service_type,
+          business_id: finalBusinessId,
+          call_id: callData.id,
+          customer_name: customer_name || 'Unknown Customer',
+          customer_phone: customer_phone || phone_number || null,
+          customer_email: customer_email || null,
+          customer_address: customer_address || null,
+          reason: call_reason || null,
           qualified: true,
           status: 'new',
+          score: 85,
+          urgency: urgency || 'medium',
         },
       ])
 
       if (leadError) {
-        console.error('[v0] Failed to create lead:', leadError)
-      } else {
-        // Create notification for qualified lead
-        await supabase.from('notifications').insert([
-          {
-            user_id: agent_id,
-            type: 'qualified',
-            title: 'New Qualified Lead',
-            message: `${lead_data.name} is interested in ${lead_data.service_type}`,
-          },
-        ])
+        console.error('[CrewDesk] Failed to create lead:', leadError)
+      }
+
+      // Create notification for qualified lead
+      const { error: notifError } = await supabase.from('notifications').insert([
+        {
+          business_id: finalBusinessId,
+          type: 'qualified',
+          title: 'New Qualified Lead',
+          message: `${customer_name || 'New customer'} is interested in your services.`,
+          unread: true,
+        },
+      ])
+
+      if (notifError) {
+        console.error('[CrewDesk] Failed to create notification:', notifError)
       }
     }
-  }
 
-  return NextResponse.json({
-    success: true,
-    message: 'Call analysis recorded',
-  })
+    // Mark webhook as processed (for idempotency)
+    if (idempotencyKey) {
+      processedWebhooks.add(idempotencyKey)
+      // Clean up old keys periodically (in production, use TTL)
+      if (processedWebhooks.size > 10000) {
+        processedWebhooks.clear()
+      }
+    }
+
+    return NextResponse.json({ success: true, callId: call_id })
+  } catch (error) {
+    console.error('[CrewDesk] Webhook processing error:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Webhook processing failed' },
+      { status: 500 }
+    )
+  }
 }

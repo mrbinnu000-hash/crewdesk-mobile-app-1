@@ -1,275 +1,435 @@
-# CrewDesk Deployment Guide
+# CrewDesk Production Deployment Guide
 
-Complete guide to deploy CrewDesk to production and start onboarding clients.
+## Prerequisites
 
-## Phase 1: Prepare Your Environment
+### Required Accounts
+- Supabase account (https://supabase.com)
+- Vercel account (https://vercel.com)
+- Retell AI account (https://retell.ai)
+- Domain name (optional, for custom domain)
 
-### 1.1 Verify All Credentials
+### Required Software
+- Node.js 18.17+ or later
+- npm or pnpm
+- Git
 
-Make sure you have:
-- ✅ Supabase project with schema set up
-- ✅ Retell API key
-- ✅ Your domain (or use Vercel's free domain)
+---
 
-### 1.2 Test Locally
+## Step 1: Supabase Setup
+
+### 1.1 Create Supabase Project
+
+1. Go to https://supabase.com
+2. Click "New Project"
+3. Select your organization
+4. Enter project name: `crewdesk` (or your preference)
+5. Select region closest to your users
+6. Create a strong database password
+7. Wait for project to initialize (~5 minutes)
+
+### 1.2 Run Database Migration
+
+1. In Supabase dashboard, go to "SQL Editor"
+2. Click "New Query"
+3. Copy and paste the entire contents of `lib/migrations/001_init.sql`
+4. Click "Run"
+5. Verify all tables are created
+
+**Tables created:**
+- businesses
+- profiles
+- calls
+- leads
+- notifications
+- notification_preferences
+- follow_ups
+- analytics_events
+
+### 1.3 Enable RLS
+
+1. Go to "Authentication" → "Policies"
+2. Verify RLS is enabled on all tables (should be automatic from migration)
+3. Check that policies exist for each table
+
+### 1.4 Get Supabase Credentials
+
+1. Go to "Project Settings" → "API"
+2. Copy:
+   - Project URL → `NEXT_PUBLIC_SUPABASE_URL`
+   - Anon Key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+3. Save these safely
+
+---
+
+## Step 2: Local Development
+
+### 2.1 Clone and Install
 
 ```bash
-# Install dependencies
-pnpm install
-
-# Run database schema
-# (See DATABASE_SETUP.md)
-
-# Start local server
-pnpm dev
-
-# Navigate to http://localhost:3000
+git clone <your-repo-url>
+cd crewdesk
+npm install  # or pnpm install
 ```
 
-## Phase 2: Deploy to Vercel
+### 2.2 Environment Variables
 
-### 2.1 Connect Your Repository
+Create `.env.development.local`:
 
-1. Push your code to GitHub:
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+
+# Retell (optional for testing)
+RETELL_WEBHOOK_SECRET=your-secret-here
+```
+
+### 2.3 Run Locally
+
+```bash
+npm run dev
+# or
+pnpm dev
+```
+
+Visit http://localhost:3000
+
+### 2.4 Test Authentication
+
+1. Click "Sign Up"
+2. Create test account with email and password
+3. This automatically creates:
+   - User in Supabase Auth
+   - Business record
+   - Profile record
+   - Notification preferences
+
+---
+
+## Step 3: Retell Integration
+
+### 3.1 Configure Retell Webhook
+
+1. Go to Retell AI dashboard
+2. Navigate to webhooks/callbacks
+3. Add webhook URL: `https://yourdomain.com/api/webhooks/retell`
+4. Select Signature Algorithm: `HMAC-SHA256`
+5. Copy webhook secret
+6. Events to subscribe:
+   - call_started
+   - call_ended
+   - call_analyzed
+
+### 3.2 Store Webhook Secret
+
+Add to environment variables:
+
+```env
+RETELL_WEBHOOK_SECRET=your-secret-from-retell
+```
+
+This enables signature verification for webhook security.
+
+### 3.3 Test Webhook (Optional)
+
+Make a test POST to your webhook endpoint:
+
+```bash
+curl -X POST https://yourdomain.com/api/webhooks/retell \
+  -H "Content-Type: application/json" \
+  -H "x-retell-signature: test-signature" \
+  -d '{
+    "call_id": "test-call-123",
+    "business_id": "test-business-id",
+    "phone_number": "+1234567890",
+    "duration_seconds": 120,
+    "transcript": "Test transcript",
+    "qualified_lead": false
+  }'
+```
+
+Should return `{ "success": true }`
+
+---
+
+## Step 4: Vercel Deployment
+
+### 4.1 Push to GitHub
+
 ```bash
 git add .
-git commit -m "Add complete backend with Supabase and Retell integration"
+git commit -m "Production deployment setup"
 git push origin main
 ```
 
-2. Go to https://vercel.com/new
-3. Select your GitHub repository
-4. Choose "CrewDesk" as the project name
-5. Click "Deploy"
+### 4.2 Connect to Vercel
 
-### 2.2 Configure Environment Variables in Vercel
+1. Go to https://vercel.com/new
+2. Import your GitHub repository
+3. Select project root
+4. Click "Import"
 
-After deployment, go to your Vercel project settings:
+### 4.3 Environment Variables in Vercel
 
-1. **Settings** → **Environment Variables**
-2. Add these variables:
+In Vercel project settings → Environment Variables:
 
+Add:
 ```
-SUPABASE_PROJECT_URL=https://xxxxx.supabase.co
-SUPABASE_ANON_KEY=xxxxx
-SUPABASE_SERVICE_ROLE_KEY=xxxxx
-RETELL_API_KEY=xxxxx
-NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=https://yourdomain.com/auth/callback
+NEXT_PUBLIC_SUPABASE_URL = https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY = your-anon-key
+RETELL_WEBHOOK_SECRET = your-webhook-secret
 ```
 
-3. Click "Save"
+### 4.4 Deploy
 
-### 2.3 Redeploy
+Click "Deploy" and wait for build to complete (~3-5 minutes)
 
-After adding environment variables:
-1. Go to **Deployments**
-2. Click the three dots on the latest deployment
-3. Select "Redeploy"
+### 4.5 Verify Deployment
 
-## Phase 3: Configure Retell Webhooks
+1. Click "Visit" to open deployed site
+2. Test sign up flow
+3. Check dashboard loads
+4. Verify database connection works
 
-### 3.1 Update Webhook URL
+---
 
-1. Go to Retell Dashboard → Settings → Webhooks
-2. Update webhook URL to your production domain:
-   ```
-   https://yourdomain.com/api/webhooks/retell
-   ```
-3. Select events to listen for:
-   - ✅ call_started
-   - ✅ call_ended
-   - ✅ call_analyzed
+## Step 5: Custom Domain (Optional)
 
-### 3.2 Test Webhook
+### 5.1 In Vercel
 
-Make a test call through Retell and verify:
-1. Call appears in database
-2. Notifications are created
-3. Leads are generated if qualified
+1. Go to project settings → Domains
+2. Add your domain
+3. Vercel provides DNS records
 
-## Phase 4: Set Up Custom Domain (Optional)
+### 5.2 Update DNS
 
-### 4.1 Add Domain to Vercel
+1. Go to your domain provider (GoDaddy, Namecheap, etc.)
+2. Add DNS records as shown by Vercel
+3. Wait for DNS propagation (5-30 minutes)
 
-1. In Vercel project, go to **Settings** → **Domains**
-2. Enter your domain
-3. Follow DNS configuration steps
-4. Wait for SSL certificate (usually ~5 minutes)
+### 5.3 SSL Certificate
 
-### 4.2 Update Retell Webhook URL
+Vercel automatically generates SSL certificates. Wait a few minutes for activation.
 
-Update the webhook URL in Retell to use your custom domain:
-```
-https://yourdomain.com/api/webhooks/retell
-```
+---
 
-## Phase 5: Client Onboarding
+## Step 6: Production Checklist
 
-### 5.1 Create Client Account
+### Security
+- [ ] Environment variables are not in git
+- [ ] Database backups are enabled
+- [ ] RLS policies are active
+- [ ] Webhook signature verification is working
 
-For each client:
+### Functionality
+- [ ] Sign up creates business and profile
+- [ ] Login works with real credentials
+- [ ] Dashboard loads real data
+- [ ] Leads page loads real data
+- [ ] Logout clears session
+- [ ] Retell webhook receives calls
 
-1. Send them the sign-up link:
-   ```
-   https://yourdomain.com/auth/sign-up
-   ```
+### Monitoring
+- [ ] Error tracking configured (optional: Sentry)
+- [ ] Database logs enabled
+- [ ] Retell webhook logs monitored
+- [ ] Daily backups verified
 
-2. They create account with:
-   - Email
-   - Password
+### Documentation
+- [ ] Team knows how to access Supabase
+- [ ] Webhook secrets stored securely
+- [ ] Environment variables documented
+- [ ] Deployment process documented
 
-3. Email confirmation required
+---
 
-### 5.2 Connect Retell to Their Number
+## Troubleshooting
 
-1. Client gets their AI receptionist number from Retell
-2. They configure call forwarding from their business number
-3. Calls now route to AI receptionist
-4. Calls logged automatically in CrewDesk
+### "Database connection failed"
 
-### 5.3 Train on Dashboard
+**Cause**: Missing or incorrect Supabase credentials
 
-Show them:
-- **Dashboard**: Overview of calls and leads
-- **Leads**: All qualified leads with customer info
-- **Notifications**: Real-time alerts for qualified leads
-- **Analytics**: Performance metrics and trends
+**Fix**:
+1. Verify `NEXT_PUBLIC_SUPABASE_URL` exists
+2. Verify `NEXT_PUBLIC_SUPABASE_ANON_KEY` exists
+3. Restart dev server or redeploy
 
-## Phase 6: Monitor & Optimize
+### "RLS policy violation"
 
-### 6.1 Monitor Performance
+**Cause**: User trying to access another business's data
 
-Watch for:
-- Call success rate (should be >95%)
-- Lead qualification accuracy
-- System uptime (Vercel provides 99.95% SLA)
+**Fix**:
+1. Check that business_id matches in database
+2. Verify RLS policies exist
+3. Check that user is authenticated
+4. Verify JWT token includes correct user_id
 
-### 6.2 Analytics Checks
+### "Webhook signature invalid"
 
-Check the Analytics page for:
-- Total calls handled
-- Conversion rate
-- Average call duration
-- Lead status distribution
+**Cause**: Webhook secret mismatch
 
-### 6.3 Troubleshoot Issues
+**Fix**:
+1. Verify `RETELL_WEBHOOK_SECRET` matches Retell dashboard
+2. Check signature algorithm is HMAC-SHA256
+3. Verify webhook request includes `x-retell-signature` header
 
-Common issues:
+### "Sign up fails to create business"
 
-**Calls not showing:**
-- Verify Retell webhook URL is correct
-- Check API key is valid
-- Review Retell webhook logs
+**Cause**: Trigger not executing
 
-**Leads not created:**
-- Verify call analysis is enabled in Retell
-- Check database for call records
-- Review error logs in Vercel
+**Fix**:
+1. Check that `handle_new_user` trigger exists in Supabase
+2. Verify trigger is enabled
+3. Check Supabase function logs
+4. Manually create business if needed
 
-**Notifications not appearing:**
-- Verify database connection
-- Check Supabase RLS policies
-- Review browser console for errors
+### "Production build fails"
 
-## Phase 7: Scale & Maintain
+**Cause**: TypeScript errors or missing dependencies
 
-### 7.1 Database Backups
+**Fix**:
+1. Run `npm run build` locally
+2. Fix any errors shown
+3. Verify `NEXT_PUBLIC_` env vars are set
+4. Redeploy to Vercel
 
-In Supabase:
-1. Go to **Settings** → **Backups**
-2. Enable daily automated backups
-3. Set retention to 30 days
+---
 
-### 7.2 Monitor Database Usage
+## Monitoring & Maintenance
 
-1. Go to **Database** → **Health**
-2. Monitor:
-   - Connection count
-   - Query performance
-   - Storage usage
+### Daily Tasks
+- Check Retell webhook logs for errors
+- Monitor error rate in Vercel
+- Review any new error emails
 
-### 7.3 Set Up Alerts
+### Weekly Tasks
+- Check database size in Supabase
+- Review user growth
+- Monitor API rate limits
+- Verify backups are running
 
-In Vercel:
-1. Go to **Integrations** → **Slack** (optional)
-2. Enable alerts for:
-   - Build failures
-   - High error rates
-   - Performance issues
+### Monthly Tasks
+- Review application analytics
+- Check security logs
+- Update dependencies
+- Performance optimization review
 
-## Phase 8: Advanced Features (Optional)
+---
 
-### 8.1 Add Email Notifications
+## Scaling Considerations
 
-Update `/app/api/notifications/route.ts` to send emails:
+### When to Add Caching
+- Database queries >100ms
+- Dashboard load >2s
+- Real-time data critical
 
-```typescript
-// Add to webhook handler
-await sendEmail({
-  to: user.email,
-  subject: 'New Qualified Lead',
-  template: 'qualified_lead'
-})
-```
+### When to Implement Pagination
+- Leads list >100 items
+- Calls list >500 items
+- Search results >50 items
 
-### 8.2 Add SMS Alerts
+### When to Add Rate Limiting
+- API endpoints hit >100 req/sec
+- Webhook failures increase
+- Need to prevent abuse
 
-Integrate Twilio or AWS SNS:
+### When to Scale Database
+- Monthly queries >100M
+- Storage >10GB
+- Concurrent connections >50
 
-```typescript
-// Example with Twilio
-await client.messages.create({
-  body: 'New qualified lead from ' + lead.customer_name,
-  from: '+1234567890',
-  to: user.phone_number
-})
-```
+---
 
-### 8.3 Add Call Recording Storage
+## Backup & Disaster Recovery
 
-Store recordings in Vercel Blob:
+### Supabase Backups
 
-```typescript
-// In webhook handler
-const blob = await put(
-  `recordings/${call.id}.mp3`,
-  recording_url,
-  { access: 'private' }
-)
-```
+1. Go to Project Settings → Backups
+2. Enable daily backups (default: 7 days)
+3. Manual backup available anytime
 
-## Production Checklist
+### GitHub Backups
 
-- [ ] Database schema created
-- [ ] Environment variables set in Vercel
-- [ ] Retell webhook URL configured
-- [ ] SSL certificate installed
-- [ ] Custom domain set up (if applicable)
-- [ ] Test call completed end-to-end
-- [ ] Client account created and tested
-- [ ] Analytics page verified
-- [ ] Notification system tested
-- [ ] Backups enabled
-- [ ] Monitoring alerts set up
-- [ ] Client documentation prepared
+- Code is backed up via GitHub
+- Pull latest version anytime
+- Review deployment history
 
-## Support
+### Data Recovery
 
-For issues or questions:
+In emergency:
+1. Stop all incoming webhooks
+2. Contact Supabase support
+3. Restore from daily backup
+4. Verify data integrity
+5. Resume webhooks
 
-1. **Supabase Help**: https://supabase.com/docs
-2. **Retell Documentation**: https://docs.retellai.com
-3. **Vercel Support**: https://vercel.com/help
-4. **Next.js Documentation**: https://nextjs.org/docs
+---
 
-## Next: Client Success
+## Security Best Practices
 
-Once deployed:
+### Code Level
+- [ ] Never commit secrets
+- [ ] Use environment variables
+- [ ] Enable code scanning on GitHub
+- [ ] Review dependencies regularly
 
-1. Train clients on the dashboard
-2. Monitor for issues
-3. Gather feedback
-4. Iterate on features
-5. Scale to more clients
+### Database Level
+- [ ] RLS policies enabled
+- [ ] Regular backups configured
+- [ ] Strong database passwords
+- [ ] IP whitelisting (optional)
 
-Your CrewDesk AI Receptionist platform is now ready to serve clients!
+### Application Level
+- [ ] HTTPS/SSL enabled
+- [ ] Webhook signature verification
+- [ ] Input validation on all endpoints
+- [ ] Rate limiting configured
+- [ ] Error messages don't leak data
+
+### Infrastructure Level
+- [ ] Vercel security scanning enabled
+- [ ] Environment variables encrypted
+- [ ] Database connection pooling
+- [ ] DDoS protection (Vercel built-in)
+
+---
+
+## Getting Help
+
+### Documentation
+- Supabase: https://supabase.com/docs
+- Next.js: https://nextjs.org/docs
+- Retell AI: https://docs.retellai.com
+- Vercel: https://vercel.com/docs
+
+### Support
+- Email: support@crewdesk.com (when deployed)
+- GitHub Issues: Report bugs in repository
+- Community: Check existing issues/discussions
+
+---
+
+## Next Steps After Deployment
+
+1. **Test Retell Integration**: Make test calls, verify they appear in dashboard
+2. **Invite Team Members**: Create accounts for team
+3. **Configure Notifications**: Set up notification preferences
+4. **Monitor First Week**: Watch for errors, check performance
+5. **Plan Feature Rollout**: Recording storage, push notifications, etc.
+
+---
+
+## Version History
+
+- **v1.0.0** (Current)
+  - Authentication system
+  - Multi-tenancy foundation
+  - Dashboard and leads
+  - Webhook integration
+  - Production-ready database
+
+---
+
+**Last Updated**: 2024
+**Deployment Time**: ~15 minutes
+**Estimated Cost**: $25-100/month (depending on usage)

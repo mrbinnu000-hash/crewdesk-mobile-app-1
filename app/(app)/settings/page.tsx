@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import {
   Building2,
@@ -12,7 +13,7 @@ import {
   LogOut,
   ChevronRight,
 } from 'lucide-react'
-import { business } from '@/lib/data'
+import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 function Toggle({
@@ -46,11 +47,20 @@ function Toggle({
 }
 
 export default function SettingsPage() {
+  const router = useRouter()
+  const supabase = createClient()
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [notifications, setNotifications] = useState(true)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   useEffect(() => setMounted(true), [])
+
+  async function handleLogout() {
+    setLoggingOut(true)
+    await supabase.auth.signOut()
+    router.push('/auth/login')
+  }
 
   return (
     <div className="flex flex-col gap-5 px-5 pt-8">
@@ -140,12 +150,18 @@ export default function SettingsPage() {
             <p className="flex-1 text-sm font-medium">Help &amp; Support</p>
             <ChevronRight className="size-4 text-muted-foreground" />
           </button>
-          <Link href="/" className="press-scale flex w-full items-center gap-3 p-4 text-left">
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="press-scale flex w-full items-center gap-3 p-4 text-left disabled:opacity-50"
+          >
             <span className="flex size-9 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
               <LogOut className="size-4" />
             </span>
-            <p className="flex-1 text-sm font-medium text-destructive">Log Out</p>
-          </Link>
+            <p className="flex-1 text-sm font-medium text-destructive">
+              {loggingOut ? 'Logging out...' : 'Log Out'}
+            </p>
+          </button>
         </div>
       </section>
 

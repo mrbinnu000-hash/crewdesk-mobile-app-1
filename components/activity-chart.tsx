@@ -1,13 +1,24 @@
 'use client'
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { activityChart } from '@/lib/data'
 
-export function ActivityChart() {
+interface ActivityChartProps {
+  data?: Record<string, number>
+}
+
+export function ActivityChart({ data }: ActivityChartProps) {
+  // Convert object to array format for Recharts
+  const chartData = data
+    ? Object.entries(data).map(([date, calls]) => ({
+        date,
+        calls,
+      }))
+    : []
+
   return (
-    <div className="h-32 w-full" role="img" aria-label="Line chart of calls received per hour today">
+    <div className="h-32 w-full" role="img" aria-label="Line chart of calls received over time">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={activityChart} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
           <defs>
             <linearGradient id="callsFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.18} />
@@ -15,11 +26,11 @@ export function ActivityChart() {
             </linearGradient>
           </defs>
           <XAxis
-            dataKey="hour"
+            dataKey="date"
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
-            interval="preserveStartEnd"
+            interval={chartData.length > 7 ? Math.floor(chartData.length / 7) : 0}
           />
           <YAxis
             axisLine={false}
