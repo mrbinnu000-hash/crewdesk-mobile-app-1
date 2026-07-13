@@ -68,26 +68,6 @@ export default function LoginPage() {
         className="animate-fade-up flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 shadow-sm"
         style={{ animationDelay: '80ms' }}
       >
-        {!process.env.NEXT_PUBLIC_SUPABASE_URL ? (
-          <div className="rounded-lg bg-yellow-500/10 p-4 text-sm text-yellow-700 dark:text-yellow-500">
-            <p className="font-medium mb-2">Configuration Required</p>
-            <p className="text-xs mb-3">
-              Supabase credentials are not configured. To use this application, you need to:
-            </p>
-            <ol className="text-xs list-decimal list-inside space-y-1 ml-1">
-              <li>Create a Supabase project</li>
-              <li>Get your Project URL and Anon Key</li>
-              <li>Set environment variables:
-                <code className="block bg-black/10 dark:bg-white/10 p-2 rounded mt-1 font-mono text-xs">
-                  NEXT_PUBLIC_SUPABASE_URL<br/>
-                  NEXT_PUBLIC_SUPABASE_ANON_KEY
-                </code>
-              </li>
-              <li>Restart the development server</li>
-            </ol>
-            <p className="text-xs mt-3">See LAUNCH_GUIDE.md for detailed setup instructions.</p>
-          </div>
-        ) : null}
         {error && (
           <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
             {error}
