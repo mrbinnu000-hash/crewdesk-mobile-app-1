@@ -8,7 +8,6 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function SignUpPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [businessName, setBusinessName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,6 +32,14 @@ export default function SignUpPage() {
     setLoading(true)
 
     try {
+      // Check if Supabase is configured
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        setError('Supabase is not configured. Please set up your Supabase credentials.')
+        setLoading(false)
+        return
+      }
+
+      const supabase = createClient()
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,

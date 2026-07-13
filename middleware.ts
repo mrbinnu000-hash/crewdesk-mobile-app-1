@@ -3,6 +3,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
 export async function middleware(request: NextRequest) {
+  // Public routes that don't require authentication
+  const publicRoutes = ['/auth/login', '/auth/sign-up', '/auth/reset-password', '/auth/callback', '/']
+  const isPublicRoute = publicRoutes.some((route) => request.nextUrl.pathname.startsWith(route))
+
+  // Check if Supabase credentials are configured
+  const hasSupabaseConfig =
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // If Supabase is not configured, allow public routes but redirect others to login
+  if (!hasSupabaseConfig) {
+    if (isPublicRoute) {
+      return NextResponse.next()
+    }
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
+
   const cookieStore = await cookies()
 
   let supabase = createServerClient(
@@ -29,10 +45,6 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  // Public routes that don't require authentication
-  const publicRoutes = ['/auth/login', '/auth/sign-up', '/auth/reset-password']
-  const isPublicRoute = publicRoutes.some((route) => request.nextUrl.pathname.startsWith(route))
 
   // If user is not authenticated
   if (!user) {
