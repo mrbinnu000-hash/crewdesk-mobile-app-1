@@ -8,8 +8,8 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('support@crewdesk.in')
+  const [password, setPassword] = useState('H@rSh@311205')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -19,9 +19,41 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      // Demo mode: allow login with test credentials
+      const isDemoMode = email === 'support@crewdesk.in' && password === 'H@rSh@311205'
+
+      if (isDemoMode) {
+        // Create a demo session and store it
+        const demoSession = {
+          user: {
+            id: 'demo-user-1',
+            email: 'support@crewdesk.in',
+            user_metadata: {
+              business_name: 'CrewDesk Demo',
+            },
+          },
+          business_id: 'demo-business-1',
+        }
+
+        // Store in localStorage for client-side access
+        localStorage.setItem('demo_session', JSON.stringify(demoSession))
+
+        // Call a server action to set the cookie
+        const response = await fetch('/api/auth/demo-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(demoSession),
+        })
+
+        if (response.ok) {
+          router.push('/dashboard')
+          return
+        }
+      }
+
       // Check if Supabase is configured
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        setError('Supabase is not configured. Please set up your Supabase credentials.')
+        setError('Demo mode: Use email "support@crewdesk.in" and password "H@rSh@311205" to login')
         setLoading(false)
         return
       }
