@@ -9,12 +9,6 @@ export async function middleware(request: NextRequest) {
 
   const cookieStore = await cookies()
 
-  // Check for demo session (development mode)
-  const demoSession = cookieStore.get('demo_session')?.value
-  if (demoSession && !isPublicRoute) {
-    return NextResponse.next()
-  }
-
   // Check if Supabase credentials are configured
   const hasSupabaseConfig =
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
